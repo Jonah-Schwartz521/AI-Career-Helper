@@ -10,8 +10,10 @@ import argparse
 
 # IMPORTANT: use absolute imports via the package name "src"
 # Run as a module:  python3 -m src.tailor ...
+from src.utils.llm import run_llm
+from src.utils.postprocess import postprocess_and_write
 from src.utils.prompts import load_prompts, fill_user_prompt, soft_trim
-from src.utils.io import read_file
+from src.utils.io import read_file, ensure_dir
 
 
 def build_cli() -> argparse.ArgumentParser:
@@ -59,7 +61,47 @@ def main() -> None:
     print(system_prompt)
     print("\n===== USER PROMPT =====\n")
     print(user_prompt)
-    print("\n(ok) Dry run complete. Review above for correctness.\n")
+
+    # 5) Call the model
+    print("\n...calling model...\n")
+    try:
+        result = run_llm(system_prompt, user_prompt)  # {'text','usage','model'}
+    except Exception as e:
+        print("LLM call failed:", e)
+        print("Tip: ensure billing/usage is active, or keep using the dry-run until resolved.")
+        return
+
+    model_output = result["text"]
+    usage = result["usage"]
+    model_name = result["model"]
+
+    print("===== RAW MODEL OUTPUT =====\n")
+    print(model_output)
+    print("\nUsage:", usage, "| Model:", model_name)
+
+    # Save the raw output for debugging
+    ensure_dir("outputs")
+    with open("outputs/RAW_last.md", "w", encoding="utf-8") as f:
+        f.write(model_output)
+
+    # 6) Post-process into artifacts
+    out_dir = postprocess_and_write(
+        model_output,
+        role=args.role,
+        company=args.company,
+        inputs={
+            "system": system_prompt,
+            "user": user_prompt,
+            "resume": resume_text,
+            "posting": posting_text,
+        },
+        usage=usage,
+        model_name=model_name,
+    )
+    print(
+        f"\nArtifacts written to: {out_dir}\n"
+        f"  - bullets.md\n  - cover_letter.md\n  - skills_gaps.md\n  - run_metadata.json\n"
+    )
 
 
 if __name__ == "__main__":
