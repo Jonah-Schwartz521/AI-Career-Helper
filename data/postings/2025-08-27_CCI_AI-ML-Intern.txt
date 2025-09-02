@@ -1,0 +1,12 @@
+MUST-HAVES
+- Build/evaluate ML models (Python)
+- SQL for data extraction
+- Communicate insights clearly
+
+RESPONSIBILITIES
+- Train small models; analyze metrics
+- Write SQL joins/aggregations
+
+QUALIFICATIONS
+- Python (pandas, scikit-learn), SQL
+- Tableau or similar viz
