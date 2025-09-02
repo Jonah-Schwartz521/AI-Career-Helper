@@ -1,78 +1,104 @@
-# Quality Gates (Bullets • Cover Letter • Skills Gaps)
-
-## 1) Tailored Bullets — Must Pass All
-- [ ] **Count:** 3–6 bullets total.
-- [ ] **Length:** Each bullet ≤ 2 lines (wrap width ~80–100 chars).
-- [ ] **Verbs:** Each begins with a strong action verb (Built, Led, Quantified, Shipped…).
-- [ ] **Mapping:** Each bullet ends with a brief parenthetical mapping to a posting must-have.  
-      _Example:_ “(maps to: ‘build and evaluate ML models’)”
-- [ ] **Numbers:** ≥2 bullets include concrete numbers (scope, scale, impact, time).
-- [ ] **Truth:** No claims that aren’t in `data/resume.md`.
-
-**Red flags to reject**
-- Generic phrasing (“team player,” “fast learner”).
-- Vague impact (“improved,” “helped”) with no measurable context.
-- Bullets that don’t clearly map to any posting requirement.
+# AI Career Helper
+Tailor your resume + job postings into role-specific **bullets, cover letters, and skills gaps** using OpenAI.
 
 ---
 
-## 2) Cover Letter — Must Pass All
-- [ ] **Length:** ~300–350 words after post-processing.
-- [ ] **Structure:** Clear opening (why this company/role) → 2–3 concrete matches → confident close (CTA).
-- [ ] **Specificity:** Includes at least **2 resume-backed** examples tied to posting must-haves.
-- [ ] **Tone:** Confident, specific, not boastful; US English; no clichés.
-- [ ] **Truth:** No new claims beyond `resume.md`.
-
-**Red flags to reject**
-- Company boilerplate (could apply to anyone).
-- Skills listed that aren’t in resume.
-- Wall of text (no paragraphing) or >350 words after trimming.
+## Features
+- **Resume → Tailored Application**: Generate bullets, a ~325-word cover letter, and 2–5 skills gaps.  
+- **Truth Guardrails**: No fabricated experience — missing skills become “gaps” with actionable steps.  
+- **Batch Mode**: Run one job or many via CSV.  
+- **Post-Processing Rules**: Enforces word count, action verbs, and mappings to job must-haves.  
+- **Outputs Saved**: Each run creates a clean folder with Markdown artifacts and metadata.  
 
 ---
 
-## 3) Skills Gaps — Must Pass All
-- [ ] **Count:** 2–5 gaps max.
-- [ ] **Actionability:** Each gap has 1–2 **practical**, near-term steps (course + small deliverable).
-- [ ] **Relevance:** Gaps reflect actual posting must-haves missing from the resume.
-- [ ] **Brevity:** One line per step; concrete nouns/verbs, no fluff.
+## Example Output
 
-**Good step template**
-- “Complete ___ (6–8 hrs); ship a ___ replicating posting KPI ___.”
-- “Implement a small ___ in GitHub (readme + screenshot) by ___ date.”
+**Bullets**
+- Built LightGBM model on 2M+ SPARCS rows; segmented by LOS/diagnosis to cut MAE to ~$10.5K (maps to: ML models, Python)  
+- Wrote SQL queries to extract patient metrics, powering feature engineering for predictions (maps to: SQL)
 
----
+**Cover Letter (snippet)**  
+> Dear CCI Hiring Team,  
+>  
+> I am excited to apply for the AI/ML Intern position at CCI. With hands-on experience building predictive models and analyzing 2M+ healthcare records, I can contribute directly to your mission of advancing AI in healthcare…
 
-## 4) Quick Rubric (0–2 each; pass = ≥8/10)
-- **Relevance to Must-Haves:** 0 (off) 1 (partial) 2 (tight mapping)
-- **Specificity/Numbers:** 0 (none) 1 (some) 2 (clear, ≥2 quantified)
-- **Brevity/Clarity:** 0 (rambling) 1 (ok) 2 (crisp ≤2 lines/bullet, ~325w letter)
-- **Truthfulness:** 0 (fabrication) 1 (borderline) 2 (strictly resume-backed)
-- **Actionability of Gaps:** 0 (hand-wavy) 1 (some) 2 (clear steps & deliverables)
+**Skills Gap**
+- **Advanced Tableau visualizations**  
+  - Step: Complete Tableau Fundamentals; build a dashboard mirroring KPI trends.
 
 ---
 
-## 5) Reviewer Script (60–90s manual check)
-1. **Scan bullets** top-down: count (3–6), verbs, ≤2 lines, ≥2 numbers.
-2. **Check parentheses:** each bullet has “(maps to: …)” and matches a Must-Have from the posting file.
-3. **Truth sweep:** anything not in `resume.md`? If yes → move to Skills Gap or delete.
-4. **Cover letter word count:** ~300–350 after trim; opening/middle/close present.
-5. **Gaps:** 2–5 items; each with 1–2 concrete steps producing a small artifact (repo, dashboard, notebook).
+## Quickstart
+
+```bash
+# 1) Clone and install
+git clone https://github.com/<your-username>/AI-Career-Helper.git
+cd AI-Career-Helper
+pip install -r requirements.txt
+
+# 2) Add your OpenAI API key (do not commit real keys)
+echo 'OPENAI_API_KEY=sk-...' > .env
+
+# 3) Run for one job
+./run.sh "AI/ML Intern" "CCI" data/postings/cci_intern.txt data/resume.md
+
+# 4) Or batch from CSV
+python3 -m src.batch data/jobs_sample.csv
+```
+## Outputs
+Artifacts are written to `outputs/Company_Role_<timestamp>/:`
+- `bullets.md`
+- `cover_letter.md`
+- `skills_gap.md`
+- `run_metadata.json`
+
+## How It Works
+- `src/tailor.py` → Loads prompts, calls OpenAI, and orchestrates runs.  
+- `src/utils/postprocess.py` → Splits model output into sections, enforces quality gates.  
+- `src/batch.py` → Runs multiple applications from a CSV.  
+- `outputs/` → Destination for generated artifacts (one folder per run).
 
 ---
 
-## 6) Examples
+## Quality Standards
+All outputs must pass checks on:
+- **Bullets**: 3–6 total, start with action verbs, quantified where possible, each mapped to a must-have.  
+- **Cover Letter**: ~300–350 words, role/company-specific, strictly resume-backed.  
+- **Skills Gaps**: 2–5 gaps, each with 1–2 near-term, actionable steps.
 
-**Bullet (good)**
-- Built LightGBM model on 2M+ SPARCS rows; segmented by LOS/diagnosis to cut MAE to ~\$10.5K; documented SHAP drivers for cost insight **(maps to: “build & evaluate ML models; interpretability”)**
-
-**Gap + Steps (good)**
-- **Production ML (missing):**  
-  - Finish “Intro to MLflow” (4–6 hrs); log an experiment and write a 1-page readme.  
-  - Containerize a toy model (FastAPI) and deploy locally; include a cURL example.
+➡ Full rubric: `docs/quality.md`.
 
 ---
 
-## 7) Automation Notes (for later code)
-- Post-processor trims cover-letter to 350 words and rejects bullets >2 lines.
-- Prompts require mapping parentheticals; you can strip them before submission.
-- `run_metadata.json` stores token counts to watch costs per run.
+## Project Structure
+```text
+AI-Career-Helper/
+├── data/                 # Postings + resume
+├── docs/                 # Quality rubric and project notes
+├── outputs/              # Generated applications (per-run folders)
+├── src/                  # Core scripts
+│   ├── batch.py
+│   ├── tailor.py
+│   └── utils/
+│       ├── io.py
+│       ├── llm.py
+│       ├── postprocess.py
+│       └── prompts.py
+└── run.sh                # Wrapper for running a single job
+```
+
+## Testing
+```bash
+python3 -m src.tailor \
+  --role "Data Analyst Intern" \
+  --company "Acme" \
+  --posting data/postings/acme_da.txt \
+  --resume data/resume.md
+```
+
+## Author
+Built by **Jonah Schwartz**  
+
+- [LinkedIn](https://www.linkedin.com/in/jonah-schwartz-33b425271/)  
+- [GitHub](https://github.com/Jonah-Schwartz521)
