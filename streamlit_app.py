@@ -16,11 +16,19 @@ print(f"[boot] sys.path[0]={sys.path[0]}")
 # --- Boot diagnostics (print goes to terminal before Streamlit UI initializes) ---
 print("[boot] starting streamlit_app.py (header)")
 
-def _probe_openai_host(timeout_sec: float = 5.0) -> bool:
+# --- Constants & defaults ---
+PROMPT_SYSTEM_PATH = 'prompts/system_job_tailor.md'
+PROMPT_USER_PATH   = 'prompts/user_job_tailor.md'
+POSTING_MAX_CHARS  = 12000
+MODEL_DEFAULT      = 'gpt-4o-mini'
+MODEL_TIMEOUT_SEC  = 45
+
+# --- Simple network probe used before calling the API ---
+def _probe_openai_host(timeout_sec: float = 3.0) -> bool:
     try:
         with socket.create_connection(("api.openai.com", 443), timeout=timeout_sec):
             return True
-    except Exception:
+    except OSError:
         return False
 
 # Load .env explicitly from project root to avoid REPL/frame issues
@@ -36,8 +44,16 @@ st.set_page_config(page_title='AI Career Helper', page_icon="🧰", layout="wide
 st.title("AI Career Helper 🧰")
 st.caption('Tailor a posting + resume into bullets, cover letter, and skill gaps')
 
-# DEBUG marker so you know the script reached the frontend
-st.write("🔧 App loaded; preparing UI…")
+# --- Sidebar controls ---
+with st.sidebar:
+    st.header("Settings")
+    debug_mode = st.toggle("Debug mode", value=False, help="Show extra boot info in the UI")
+    dry_run    = st.toggle("Dry run (no API call)", value=False, help="Skip the LLM; generate placeholder output for UI testing")
+    model      = st.selectbox("Model", ["gpt-4o-mini", "gpt-4o"], index=0)
+    st.caption("Each real run (non-dry) consumes API credits based on prompt + output tokens.")
+
+if debug_mode:
+    st.caption("🔧 App loaded; preparing UI…")
 
 # --- Inputs ---
 col1, col2 = st.columns(2, gap='large')
@@ -93,9 +109,6 @@ if run_btn:
                 from src.utils.prompts import load_prompts, fill_user_prompt, soft_trim
                 st.write("  ↳ ok")
 
-                st.write("• importing src.utils.llm …")
-                from src.utils.llm import run_llm
-                st.write("  ↳ ok")
 
                 st.write("• importing src.utils.postprocess …")
                 from src.utils.postprocess import postprocess_and_write
@@ -117,8 +130,8 @@ if run_btn:
             st.write("Step 2/6 — Loading prompts…")
             try:
                 system_prompt, user_template = load_prompts(
-                    'prompts/system_job_tailor.md',
-                    'prompts/user_job_tailor.md'
+                    PROMPT_SYSTEM_PATH,
+                    PROMPT_USER_PATH,
                 )
                 st.success("Prompts loaded ✔")
             except Exception as prompt_err:
@@ -164,53 +177,72 @@ if run_btn:
                 st.error('Please provide a job posting (paste, upload, or repo path).')
                 status.update(label="Missing job posting", state="error")
                 st.stop()
-            posting_trimmed = soft_trim(posting_text, max_chars=12000)
+            posting_trimmed = soft_trim(posting_text, max_chars=POSTING_MAX_CHARS)
             st.success("Posting captured ✔")
 
             st.write("Step 5/6 — Building prompts & calling model…")
 
-            # Preflight checks before calling the model
-            key = os.getenv("OPENAI_API_KEY", "").strip()
-            if not key:
-                st.error("OPENAI_API_KEY is missing. Add it to your .env and restart the app.")
-                status.update(label="Missing OPENAI_API_KEY", state="error")
-                st.stop()
+            # If dry run, fabricate a plausible response and skip network/key checks
+            if dry_run:
+                st.info("Dry run enabled — skipping model call and generating placeholder outputs.")
+                user_prompt = "(dry-run)"
+                model_output = (
+                    "# Bullets\n"
+                    "- Built LightGBM model on 2M+ SPARCS rows (maps to: ML models, Python)\n\n"
+                    "# Cover Letter\n"
+                    "Dear Hiring Team, this is a dry-run placeholder.\n\n"
+                    "# Skills Gaps\n"
+                    "- Deep learning experience → Take FastAI course\n"
+                )
+                usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+                model_name = "dry-run"
+            else:
+                # Preflight checks before calling the model
+                key = os.getenv("OPENAI_API_KEY", "").strip()
+                if not key:
+                    st.error("OPENAI_API_KEY is missing. Add it to your .env and restart the app.")
+                    status.update(label="Missing OPENAI_API_KEY", state="error")
+                    st.stop()
 
-            st.write("• probing network to api.openai.com …")
-            if not _probe_openai_host():
-                st.error("Cannot reach api.openai.com:443. Check Wi‑Fi/VPN/firewall and try again.")
-                status.update(label="Network unreachable", state="error")
-                st.stop()
-            st.write("  ↳ ok")
+                st.write("• probing network to api.openai.com …")
+                if not _probe_openai_host():
+                    st.error("Cannot reach api.openai.com:443. Check Wi‑Fi/VPN/firewall and try again.")
+                    status.update(label="Network unreachable", state="error")
+                    st.stop()
+                st.write("  ↳ ok")
 
-            user_prompt = fill_user_prompt(
-                template=user_template,
-                role=role,
-                company=company,
-                resume=resume_text,
-                posting=posting_trimmed,
-            )
-            try:
-                with st.spinner('Calling model… (45s timeout)'):
-                    def _call():
-                        return run_llm(system_prompt, user_prompt, model='gpt-4o-mini')
-                    with ThreadPoolExecutor(max_workers=1) as ex:
-                        fut = ex.submit(_call)
-                        try:
-                            result = fut.result(timeout=45)
-                        except FuturesTimeoutError:
-                            st.error("Model call timed out after 45s. Network may be slow or the API is stalling.")
-                            status.update(label="Model call timed out", state="error")
-                            st.stop()
-                model_output = result['text']
-                usage = result.get('usage', {})
-                model_name = result.get('model', 'unknown')
-                st.success("Model response received ✔")
-            except Exception as llm_err:
-                st.error("Model call failed. Check your API key and network.")
-                st.exception(llm_err)
-                status.update(label="Model call failed", state="error")
-                st.stop()
+                user_prompt = fill_user_prompt(
+                    template=user_template,
+                    role=role,
+                    company=company,
+                    resume=resume_text,
+                    posting=posting_trimmed,
+                )
+                # Import the LLM right before we use it to avoid import-time stalls
+                st.write("• importing src.utils.llm …")
+                from src.utils.llm import run_llm
+                st.write("  ↳ ok")
+                try:
+                    with st.spinner(f'Calling model {model}… ({MODEL_TIMEOUT_SEC}s timeout)'):
+                        def _call():
+                            return run_llm(system_prompt, user_prompt, model=model)
+                        with ThreadPoolExecutor(max_workers=1) as ex:
+                            fut = ex.submit(_call)
+                            try:
+                                result = fut.result(timeout=MODEL_TIMEOUT_SEC)
+                            except FuturesTimeoutError:
+                                st.error("Model call timed out after 45s. Network may be slow or the API is stalling.")
+                                status.update(label="Model call timed out", state="error")
+                                st.stop()
+                    model_output = result['text']
+                    usage = result.get('usage', {})
+                    model_name = result.get('model', 'unknown')
+                    st.success("Model response received ✔")
+                except Exception as llm_err:
+                    st.error("Model call failed. Check your API key and network.")
+                    st.exception(llm_err)
+                    status.update(label="Model call failed", state="error")
+                    st.stop()
 
             st.write("Step 6/6 — Writing artifacts to outputs/…")
             try:
@@ -237,6 +269,8 @@ if run_btn:
             status.update(label=f"Done ✔ Artifacts in `{out_dir}`", state="complete")
 
         # Show results (after status block to keep it tidy)
+        if debug_mode:
+            st.code(f"out_dir = {out_dir}")
         st.success(f'Artifacts written to: `{out_dir}`')
         b = read_file(os.path.join(out_dir, 'bullets.md'))
         c = read_file(os.path.join(out_dir, 'cover_letter.md'))
