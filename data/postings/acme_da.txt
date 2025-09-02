@@ -1,0 +1,16 @@
+MUST-HAVES
+- Strong SQL skills for data extraction and analysis
+- Proficiency in Python (pandas, numpy)
+- Ability to create clear, actionable dashboards in Tableau
+- Strong communication skills for presenting insights
+
+RESPONSIBILITIES
+- Collect, clean, and analyze business data from multiple sources
+- Build reports and dashboards to support decision-making
+- Work with stakeholders to identify KPIs and track progress
+- Support ad-hoc data analysis requests
+
+QUALIFICATIONS
+- Pursuing a degree in Information Science, Statistics, or related field
+- Previous experience with data analysis projects (school or internships)
+- Familiarity with data visualization best practices
