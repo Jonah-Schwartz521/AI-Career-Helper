@@ -87,4 +87,8 @@ def postprocess_and_write(model_output: str,
         "created_at": datetime.now().isoformat(timespec="seconds"),
     }
     write_artifacts(out_dir, bullets_md, letter_md, gaps_md, metadata)
+
+    with open("outputs/run_metadata.json","w",encoding="utf-8") as pf:
+        json.dump({"outputs_dir": out_dir}, pf)
+        
     return out_dir
