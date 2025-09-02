@@ -18,3 +18,14 @@ python3 -m src.tailor \
   --company "$COMPANY" \
   --posting "$POSTING" \
   --resume "$RESUME"
+
+# Capture last output dir from metadata
+LAST_DIR=$(jq -r '.outputs_dir // empty' outputs/run_metadata.json 2>/dev/null || true)
+
+# Fallback: newest folder in outputs/
+if [ -z "$LAST_DIR" ]; then
+  LAST_DIR=$(ls -dt outputs/*_* | head -n 1)
+fi
+
+echo "Opening: $LAST_DIR"
+code "$LAST_DIR/bullets.md" "$LAST_DIR/cover_letter.md" "$LAST_DIR/skills_gaps.md" || true
