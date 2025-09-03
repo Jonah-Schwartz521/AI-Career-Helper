@@ -1,5 +1,36 @@
-.env
-outputs/
+# OS
 .DS_Store
+
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+
+# Virtual env
 .venv/
+pyvenv.cfg
+
+# Streamlit
+.streamlit/
+
+# Secrets
+.env
+
+# Logs
+*.log
+
+# App outputs & bundles
+outputs/
+*.zip
+
+# Data 
+data/*.csv
+data/*.pdf
+data/resume.md
+data/postings/*
+!data/README.md
+
+# Jupyter / VSCode
+.ipynb_checkpoints/
+.vscode/
