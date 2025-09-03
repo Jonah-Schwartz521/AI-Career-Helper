@@ -1,6 +1,7 @@
 import io, os, zipfile
 from pathlib import Path
 import streamlit as st
+st.set_page_config(page_title='AI Career Helper', page_icon="🧰", layout="wide")
 from pypdf import PdfReader
 from dotenv import load_dotenv
 import socket
@@ -24,6 +25,10 @@ MODEL_DEFAULT      = 'gpt-4o-mini'
 MODEL_TIMEOUT_SEC  = 45
 
 
+# --- Page setup ---
+st.title("AI Career Helper 🧰")
+st.caption('Tailor a posting + resume into bullets, cover letter, and skill gaps')
+
 # --- Demo/Real mode gating (public = demo only) ---
 # Public deploy: leave ALLOW_REAL_RUN unset -> demo enforced
 # Private/local: set ALLOW_REAL_RUN=1 (+ optional REAL_MODE_PASSWORD) to enable real runs
@@ -36,6 +41,7 @@ def _secret_get(key, default=None):
 
 ALLOW_REAL_RUN = bool(os.getenv("ALLOW_REAL_RUN") or _secret_get("ALLOW_REAL_RUN", False))
 REAL_MODE_PASSWORD = os.getenv("REAL_MODE_PASSWORD") or _secret_get("REAL_MODE_PASSWORD", None)
+
 def real_mode_enabled_ui() -> bool:
     """
     Returns True only if:
@@ -72,11 +78,6 @@ try:
     print(f"[boot] .env load: path={env_path} loaded={loaded}")
 except Exception as _e:
     print(f"[boot] .env load error: {_e.__class__.__name__}: {_e}")
-
-# --- Page setup ---
-st.set_page_config(page_title='AI Career Helper', page_icon="🧰", layout="wide")
-st.title("AI Career Helper 🧰")
-st.caption('Tailor a posting + resume into bullets, cover letter, and skill gaps')
 
 # --- Sidebar controls ---
 with st.sidebar:
