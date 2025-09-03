@@ -23,6 +23,40 @@ POSTING_MAX_CHARS  = 12000
 MODEL_DEFAULT      = 'gpt-4o-mini'
 MODEL_TIMEOUT_SEC  = 45
 
+
+# --- Demo/Real mode gating (public = demo only) ---
+# Public deploy: leave ALLOW_REAL_RUN unset -> demo enforced
+# Private/local: set ALLOW_REAL_RUN=1 (+ optional REAL_MODE_PASSWORD) to enable real runs
+
+def _secret_get(key, default=None):
+    try:
+        return st.secrets.get(key, default)  # may raise if no secrets file
+    except Exception:
+        return default
+
+ALLOW_REAL_RUN = bool(os.getenv("ALLOW_REAL_RUN") or _secret_get("ALLOW_REAL_RUN", False))
+REAL_MODE_PASSWORD = os.getenv("REAL_MODE_PASSWORD") or _secret_get("REAL_MODE_PASSWORD", None)
+def real_mode_enabled_ui() -> bool:
+    """
+    Returns True only if:
+      - ALLOW_REAL_RUN is set (env or secrets), and
+      - Optional: passphrase matches (if provided), and
+      - User checks a box acknowledging real credits will be used
+    Otherwise returns False (demo mode).
+    """
+    if not ALLOW_REAL_RUN:
+        st.sidebar.info("🔒 Demo mode is enforced — real generation is disabled.")
+        return False
+
+    if REAL_MODE_PASSWORD:
+        pw = st.sidebar.text_input("Real mode passphrase", type="password")
+        if pw != REAL_MODE_PASSWORD:
+            st.sidebar.warning("Enter the passphrase to enable real generation.")
+            return False
+
+    return st.sidebar.checkbox("Real generation (uses your OpenAI credits)", value=False)
+
+
 # --- Simple network probe used before calling the API ---
 def _probe_openai_host(timeout_sec: float = 3.0) -> bool:
     try:
@@ -48,9 +82,15 @@ st.caption('Tailor a posting + resume into bullets, cover letter, and skill gaps
 with st.sidebar:
     st.header("Settings")
     debug_mode = st.toggle("Debug mode", value=False, help="Show extra boot info in the UI")
-    dry_run    = st.toggle("Dry run (no API call)", value=False, help="Skip the LLM; generate placeholder output for UI testing")
+    dry_run = not real_mode_enabled_ui()
     model      = st.selectbox("Model", ["gpt-4o-mini", "gpt-4o"], index=0)
     st.caption("Each real run (non-dry) consumes API credits based on prompt + output tokens.")
+
+# --- Mode badge ---
+if dry_run:
+    st.info("🧪 Demo mode is ON — outputs are placeholders and no credits are used.")
+else:
+    st.warning("⚠️ Real mode — API credits will be used.")
 
 if debug_mode:
     st.caption("🔧 App loaded; preparing UI…")

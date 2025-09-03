@@ -24,7 +24,7 @@ pyvenv.cfg
 outputs/
 *.zip
 
-# Data (keep a README instead)
+# Data 
 data/*.csv
 data/*.pdf
 data/resume.md
