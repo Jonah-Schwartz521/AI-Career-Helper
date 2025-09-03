@@ -1,4 +1,5 @@
 # AI Career Helper
+🚀 [Try it on Streamlit](https://ai-career-assistant.streamlit.app/)
 Tailor your resume + job postings into role-specific **bullets, cover letters, and skills gaps** using OpenAI.
 
 ---
@@ -11,6 +12,17 @@ Tailor your resume + job postings into role-specific **bullets, cover letters, a
 - **Outputs Saved**: Each run creates a clean folder with Markdown artifacts and metadata.  
 
 ---
+
+## Demo Mode vs Real Mode
+- **Default = Demo Mode** → generates placeholder outputs, no API cost.
+- **Real Mode** → requires OpenAI API key and environment variables:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export ALLOW_REAL_RUN=1
+export REAL_MODE_PASSWORD="your-password"
+streamlit run streamlit_app.py
+```
 
 ## Example Output
 
@@ -46,6 +58,28 @@ echo 'OPENAI_API_KEY=sk-...' > .env
 # 4) Or batch from CSV
 python3 -m src.batch data/jobs_sample.csv
 ```
+
+## Screenshots
+
+### Home screen
+Shows the landing page where you enter the role, company, and job posting, and upload your resume.
+
+![Home Screen](assets/home.png)
+
+---
+
+### Form filled in
+Example of a filled-out form with role, company, job posting, and resume path.
+
+![Form Filled](assets/form.png)
+
+---
+
+### Generated Outputs
+Results page showing tailored bullets, cover letter, and skills gaps.
+
+![Bullets Output](assets/bullets.png)
+
 ## Outputs
 Artifacts are written to `outputs/Company_Role_<timestamp>/:`
 - `bullets.md`
@@ -102,3 +136,14 @@ Built by **Jonah Schwartz**
 
 - [LinkedIn](https://www.linkedin.com/in/jonah-schwartz-33b425271/)  
 - [GitHub](https://github.com/Jonah-Schwartz521)
+
+## Requirements
+- Python 3.13
+- Streamlit
+- OpenAI SDK
+- pypdf
+- tqdm
+- python-dotenv
+
+## License
+This project is licensed under the MIT License.
