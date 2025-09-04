@@ -1,5 +1,5 @@
 # AI Career Helper
-🚀 [Try it on Streamlit](https://ai-career-assistant.streamlit.app/)
+[Try it on Streamlit](https://ai-career-assistant.streamlit.app/)
 Tailor your resume + job postings into role-specific **bullets, cover letters, and skills gaps** using OpenAI.
 
 ---
